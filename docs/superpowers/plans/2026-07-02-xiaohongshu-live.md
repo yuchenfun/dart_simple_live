@@ -41,6 +41,18 @@ Implementation consequence:
 - Danmaku remains optional and should be reported as unavailable until WebSocket frames and message semantics are decoded.
 - Discovery can start with `feed/category` and `feed/v1/squarefeed`, but direct room playback should land first.
 
+Current blocker after Task 3 attempt:
+
+- Shape-only capture succeeded for `current_room_info` and `{room_id}/user_card`.
+- Those two response bodies provide room title, cover, live status, host nickname, avatar, and user-card metadata.
+- They do not contain playback URL-like fields.
+- The remaining observed live endpoints did not expose response bodies during bounded retry, so their request/body shapes remain unknown.
+- The only confirmed playback evidence is the browser media request pattern `https://live-source-play.xhscdn.com/live/{room_id}_*.flv?<signed-query>`.
+- Product implementation is blocked for actual playback until one of these is available:
+  - a sanitized HAR/network export that includes response bodies for `join_business_base_info`, `join_comment_info`, `center/room/join/room`, or another endpoint that carries stream URLs;
+  - a confirmed public JS/source-map analysis identifying the field path and request shape used to build the signed `.flv` URL;
+  - an approved implementation approach that uses an embedded WebView/browser capture layer instead of pure Dart HTTP for Xiaohongshu playback.
+
 ---
 
 ## File Structure
