@@ -11,12 +11,14 @@ import 'package:simple_live_app/routes/route_path.dart';
 import 'package:simple_live_app/services/bilibili_account_service.dart';
 import 'package:simple_live_app/services/douyin_account_service.dart';
 import 'package:simple_live_app/services/kuaishou_account_service.dart';
+import 'package:simple_live_app/services/xiaohongshu_account_service.dart';
 import 'package:simple_live_core/simple_live_core.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 class AccountController extends GetxController {
   static const _douyinHomeUrl = "https://www.douyin.com/";
   static const _kuaishouHomeUrl = "https://live.kuaishou.com/";
+  static const _xiaohongshuHomeUrl = "https://www.xiaohongshu.com/";
 
   final douyinCookieCountdownTick = 0.obs;
   Timer? _douyinCookieCountdownTimer;
@@ -111,6 +113,10 @@ class AccountController extends GetxController {
 
   void kuaishouTap() async {
     kuaishouLogin();
+  }
+
+  void xiaohongshuTap() async {
+    xiaohongshuLogin();
   }
 
   void douyinLogin() {
@@ -292,8 +298,187 @@ class AccountController extends GetxController {
 
   bool get canUseKuaishouWebLogin => Platform.isAndroid || Platform.isIOS;
 
+  bool get canUseXiaohongshuWebLogin => Platform.isAndroid || Platform.isIOS;
+
   void kuaishouWebLogin() {
     Get.toNamed(RoutePath.kKuaishouWebLogin);
+  }
+
+  void xiaohongshuWebLogin() {
+    Get.toNamed(RoutePath.kXiaohongshuWebLogin);
+  }
+
+  void xiaohongshuLogin() {
+    final hasCookie = XiaohongshuAccountService.instance.hasCookie.value;
+    Utils.showBottomSheet(
+      title: "小红书账号",
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (Platform.isAndroid || Platform.isIOS)
+            ListTile(
+              leading: const Icon(Icons.account_circle_outlined),
+              title: const Text("Web登录"),
+              subtitle: const Text("登录小红书网页后自动读取 Cookie"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Get.back();
+                xiaohongshuWebLogin();
+              },
+            ),
+          if (!Platform.isAndroid && !Platform.isIOS)
+            ListTile(
+              leading: const Icon(Icons.open_in_browser),
+              title: const Text("浏览器登录后粘贴 Cookie"),
+              subtitle: const Text("使用系统浏览器打开小红书，登录后回到这里粘贴完整 Cookie"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                Get.back();
+                await openXiaohongshuInBrowserThenConfigCookie();
+              },
+            ),
+          ListTile(
+            leading: const Icon(Icons.edit_outlined),
+            title: const Text("Cookie登录"),
+            subtitle: const Text("手动粘贴 www.xiaohongshu.com 完整 Cookie"),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Get.back();
+              doXiaohongshuCookieConfig();
+            },
+          ),
+          if (hasCookie)
+            ListTile(
+              leading: const Icon(Icons.visibility_outlined),
+              title: const Text("查看当前 Cookie"),
+              subtitle: const Text("可直接查看当前保存内容"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Get.back();
+                showCurrentXiaohongshuCookie();
+              },
+            ),
+          if (hasCookie)
+            ListTile(
+              leading: const Icon(Icons.copy_all_outlined),
+              title: const Text("导出到剪贴板"),
+              subtitle: const Text("复制当前 Cookie 文本"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Get.back();
+                exportXiaohongshuCookieToClipboard();
+              },
+            ),
+          if (hasCookie)
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text("清除 Cookie"),
+              subtitle: const Text("清除后小红书接口请求可能受限"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                Get.back();
+                await clearXiaohongshuCookie();
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  void doXiaohongshuCookieConfig() {
+    final account = XiaohongshuAccountService.instance;
+    final controller = TextEditingController(text: account.cookie);
+    Get.dialog(
+      AlertDialog(
+        title: const Text("配置小红书 Cookie"),
+        content: TextField(
+          controller: controller,
+          maxLines: 6,
+          decoration: const InputDecoration(
+            hintText: "粘贴 www.xiaohongshu.com 的完整 Cookie 或 Request Headers",
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text("取消")),
+          TextButton(
+            onPressed: () {
+              final cookie = _normalizeCookieInput(controller.text);
+              Get.back();
+              if (cookie.isEmpty) {
+                account.clearCookie();
+                SmartDialog.showToast("已清除小红书 Cookie");
+              } else {
+                account.setCookie(cookie);
+                SmartDialog.showToast("小红书 Cookie 已保存");
+              }
+            },
+            child: const Text("确定"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> clearXiaohongshuCookie() async {
+    if (XiaohongshuAccountService.instance.hasCookie.value) {
+      var result = await Utils.showAlertDialog(
+        "确定要清除自定义小红书 Cookie 吗？",
+        title: "清除配置",
+      );
+      if (result) {
+        XiaohongshuAccountService.instance.clearCookie();
+        SmartDialog.showToast("已清除小红书 Cookie");
+      }
+    }
+  }
+
+  void showCurrentXiaohongshuCookie() {
+    final cookie = XiaohongshuAccountService.instance.cookie;
+    if (cookie.isEmpty) {
+      SmartDialog.showToast("当前没有小红书 Cookie");
+      return;
+    }
+    Get.dialog(
+      AlertDialog(
+        title: const Text("当前小红书 Cookie"),
+        content: SingleChildScrollView(child: SelectableText(cookie)),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text("关闭")),
+          TextButton(
+            onPressed: () {
+              Utils.copyToClipboard(cookie);
+              Get.back();
+            },
+            child: const Text("复制"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void exportXiaohongshuCookieToClipboard() {
+    final cookie = XiaohongshuAccountService.instance.cookie;
+    if (cookie.isEmpty) {
+      SmartDialog.showToast("当前没有小红书 Cookie");
+      return;
+    }
+    Utils.copyToClipboard(cookie);
+  }
+
+  Future<void> openXiaohongshuInBrowserThenConfigCookie() async {
+    try {
+      final opened = await launchUrlString(
+        _xiaohongshuHomeUrl,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened) {
+        SmartDialog.showToast("无法打开系统浏览器，请手动打开 www.xiaohongshu.com 后粘贴 Cookie");
+      }
+    } catch (_) {
+      SmartDialog.showToast("无法打开系统浏览器，请手动打开 www.xiaohongshu.com 后粘贴 Cookie");
+    }
+    doXiaohongshuCookieConfig();
   }
 
   Future<void> clearKuaishouCookie() async {
@@ -658,6 +843,22 @@ class AccountController extends GetxController {
       return "已自定义（${cookie.length} 字符），可解析有效期已过";
     }
     return "已自定义（${cookie.length} 字符），预计剩余 ${_formatDurationShort(remain)}";
+  }
+
+  String getXiaohongshuCookieSummaryText() {
+    XiaohongshuAccountService.instance.hasCookie.value;
+    final cookie = XiaohongshuAccountService.instance.cookie;
+    if (cookie.isEmpty) {
+      return "未配置，播放接口可能需要网页登录态";
+    }
+    final cookieMap = _parseCookieMap(cookie);
+    final hasLogin = cookieMap.containsKey("web_session") ||
+        cookieMap.containsKey("a1") ||
+        cookieMap.containsKey("webId") ||
+        cookieMap.containsKey("webid");
+    return hasLogin
+        ? "已配置（${cookie.length} 字符）"
+        : "已配置（${cookie.length} 字符），未识别到常见登录字段";
   }
 
   String _getDouyinCookieExpiryText(String input) {

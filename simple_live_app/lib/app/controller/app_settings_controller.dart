@@ -419,9 +419,10 @@ class AppSettingsController extends GetxController {
           Sites.allSites.keys.join(","),
         )
         .split(",");
-    //如果数量与allSites的数量不一致，将缺失的添加上
-    if (sort.length != Sites.allSites.length) {
-      var keys = Sites.allSites.keys.toList();
+    var keys = Sites.allSites.keys.toList();
+    sort = sort.where((id) => Sites.allSites.containsKey(id)).toList();
+    // 如果数量与 allSites 的数量不一致，将缺失的添加上。
+    if (sort.length != keys.length) {
       for (var i = 0; i < keys.length; i++) {
         if (!sort.contains(keys[i])) {
           sort.add(keys[i]);

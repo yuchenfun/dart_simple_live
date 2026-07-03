@@ -7,6 +7,7 @@ import 'package:simple_live_app/app/constant.dart';
 import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/app/sites.dart';
 import 'package:simple_live_app/routes/app_navigation.dart';
+import 'package:simple_live_core/simple_live_core.dart';
 
 class ParseController extends GetxController {
   final TextEditingController roomJumpToController = TextEditingController();
@@ -160,6 +161,10 @@ class ParseController extends GetxController {
       id = regExp.firstMatch(url)?.group(1) ?? "";
 
       return [id, Sites.allSites[Constant.kKuaishou]!];
+    }
+    if (url.contains("xiaohongshu.com/livestream/")) {
+      id = XiaohongshuSite.resolveRoomId(url);
+      return [id, Sites.allSites[Constant.kXiaohongshu]!];
     }
 
     return [];

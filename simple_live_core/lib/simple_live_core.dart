@@ -7,6 +7,7 @@ export 'src/bilibili_site.dart';
 export 'src/douyu_site.dart';
 export 'src/douyin_site.dart';
 export 'src/kuaishou_site.dart';
+export 'src/xiaohongshu_site.dart';
 export 'src/common/core_error.dart';
 export 'src/common/core_log.dart';
 export 'src/common/douyin_cookie_helper.dart';
@@ -17,6 +18,7 @@ export 'src/danmaku/douyu_danmaku.dart';
 export 'src/danmaku/huya_danmaku.dart';
 export 'src/danmaku/douyin_danmaku.dart';
 export 'src/danmaku/kuaishou_danmaku.dart';
+export 'src/danmaku/xiaohongshu_danmaku.dart';
 
 export 'src/model/live_category_result.dart';
 export 'src/model/live_contribution_rank.dart';

@@ -34,6 +34,12 @@ class Sites {
       name: "快手直播",
       liveSite: KuaishouSite(),
     ),
+    Constant.kXiaohongshu: Site(
+      id: Constant.kXiaohongshu,
+      logo: "assets/images/logo.png",
+      name: "小红书直播",
+      liveSite: XiaohongshuSite(),
+    ),
   };
 
   static List<Site> get supportSites {

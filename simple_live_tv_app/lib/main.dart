@@ -34,6 +34,7 @@ import 'package:simple_live_tv_app/services/follow_user_service.dart';
 import 'package:simple_live_tv_app/services/local_storage_service.dart';
 import 'package:simple_live_tv_app/services/profile_backup_service.dart';
 import 'package:simple_live_tv_app/services/sync_service.dart';
+import 'package:simple_live_tv_app/services/xiaohongshu_account_service.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main(List<String> args) async {
@@ -247,6 +248,7 @@ Future initServices() async {
 
   Get.put(BiliBiliAccountService());
   Get.put(DouyinAccountService());
+  Get.put(XiaohongshuAccountService());
   Get.put(ProfileBackupService());
 
   if (DesktopStartupArgs.isSecondaryDesktopInstance) {

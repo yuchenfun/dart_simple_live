@@ -96,6 +96,7 @@ class LocalStorageService extends GetxService {
   static const String kBilibiliCookie = "BilibiliCookie";
   static const String kDouyinCookie = "DouyinCookie";
   static const String kKuaishouCookie = "KuaishouCookie";
+  static const String kXiaohongshuCookie = "XiaohongshuCookie";
   static const String kKuaishouKww = "KuaishouKww";
   static const String kKuaishouCookieExpiresAt = "KuaishouCookieExpiresAt";
   static const String kStyleColor = "kStyleColor";

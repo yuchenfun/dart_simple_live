@@ -91,6 +91,24 @@ class AccountPage extends GetView<AccountController> {
               onTap: controller.kuaishouTap,
             ),
           ),
+          Obx(
+            () => ListTile(
+              leading: Image.asset(
+                'assets/images/logo.png',
+                width: 36,
+                height: 36,
+              ),
+              title: const Text("小红书直播"),
+              subtitle: Text(controller.getXiaohongshuCookieSummaryText()),
+              trailing: controller.canUseXiaohongshuWebLogin
+                  ? TextButton(
+                      onPressed: controller.xiaohongshuWebLogin,
+                      child: const Text("网页登录"),
+                    )
+                  : const Icon(Icons.chevron_right),
+              onTap: controller.xiaohongshuTap,
+            ),
+          ),
         ],
       ),
     );

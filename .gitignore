@@ -32,3 +32,5 @@ tmp_*.xml
 *.md
 !README.md
 !**/README.md
+!tools/BUILD_RELEASE.md
+!AI_CODEBASE_GUIDE.md

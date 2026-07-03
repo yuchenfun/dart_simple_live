@@ -45,13 +45,20 @@ Current blocker after Task 3 attempt:
 
 - Shape-only capture succeeded for `current_room_info` and `{room_id}/user_card`.
 - Those two response bodies provide room title, cover, live status, host nickname, avatar, and user-card metadata.
-- They do not contain playback URL-like fields.
-- The remaining observed live endpoints did not expose response bodies during bounded retry, so their request/body shapes remain unknown.
-- The only confirmed playback evidence is the browser media request pattern `https://live-source-play.xhscdn.com/live/{room_id}_*.flv?<signed-query>`.
-- Product implementation is blocked for actual playback until one of these is available:
-  - a sanitized HAR/network export that includes response bodies for `join_business_base_info`, `join_comment_info`, `center/room/join/room`, or another endpoint that carries stream URLs;
-  - a confirmed public JS/source-map analysis identifying the field path and request shape used to build the signed `.flv` URL;
-  - an approved implementation approach that uses an embedded WebView/browser capture layer instead of pure Dart HTTP for Xiaohongshu playback.
+- HAR analysis from `~/Downloads/www.xiaohongshu.com.har` located playback data in `current_room_info.data.room_info.pull_config`.
+- `pull_config` is a JSON string. After parsing, the stream list has fields like `quality_type_name`, `protocol`, `master_url`, and `backup_urls`.
+- Confirmed stream path examples:
+  - `http://live-source-play.xhscdn.com/live/{room_id}_hcv540.flv`
+  - `http://live-source-play.xhscdn.com/live/{room_id}_hcv520e.flv`
+  - `http://live-source-play.xhscdn.com/live/{room_id}.flv`
+- Direct Dart HTTP to `current_room_info` without Xiaohongshu Web signing returned `{"code":-1,"success":false}`.
+- The captured Web request uses anti-spam headers including `x-s`, `x-t`, and `x-s-common`.
+- Public JS analysis shows:
+  - `X-s` is produced by `seccore_signv2(realUrl, data)`.
+  - `X-t` is the current timestamp in milliseconds.
+  - `X-S-Common` is built from cookie/localStorage/browser fingerprint values and encoded by the browser-side security bundle.
+  - Signing depends on dynamic `ds` scripting, `window.mnsv2`, browser fingerprint state, localStorage, and cookies.
+- Product implementation blocker has moved from stream discovery to request signing. Prefer an embedded WebView/browser-backed login/signing bootstrap for Xiaohongshu over hard-coding a static Dart signer.
 
 ---
 
@@ -2225,3 +2232,7 @@ Expected: commit succeeds after replacing the sample paths with the actual chang
 - Spec coverage: core site, main app, TV app, account Cookie management, sync/backup, URL parsing, error handling, testing, and optional danmaku each have tasks.
 - Placeholder scan: endpoint-specific discovery is deliberately kept as an empty-result implementation until a concrete captured endpoint is available, so the plan contains no guessed endpoint names.
 - Type consistency: `Constant.kXiaohongshu`, `XiaohongshuSite`, `XiaohongshuDanmaku`, and both `XiaohongshuAccountService` classes use the same names across tasks.
+
+## Current Implementation Notes
+
+- Runtime signing is handled by a hidden `flutter_inappwebview` WebView proxy on Android, iOS, macOS, and Windows. The main app and TV app both load the Xiaohongshu live room page, intercept `current_room_info`, and reuse the browser-generated signed response instead of hardcoding `x-s` signing logic.

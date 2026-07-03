@@ -36,6 +36,7 @@ import 'package:simple_live_app/services/live_subtitle_service.dart';
 import 'package:simple_live_app/services/local_storage_service.dart';
 import 'package:simple_live_app/services/profile_backup_service.dart';
 import 'package:simple_live_app/services/sync_service.dart';
+import 'package:simple_live_app/services/xiaohongshu_account_service.dart';
 import 'package:simple_live_app/widgets/status/app_loadding_widget.dart';
 import 'package:simple_live_core/simple_live_core.dart';
 import 'package:window_manager/window_manager.dart';
@@ -447,6 +448,8 @@ Future initServices() async {
   Get.put(DouyinAccountService());
 
   Get.put(KuaishouAccountService());
+
+  Get.put(XiaohongshuAccountService());
 
   Get.put(FollowService());
   Get.put(LiveSubtitleService());

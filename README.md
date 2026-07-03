@@ -21,6 +21,7 @@
 
 - fork 来源：[原作者仓库 xiaoyaocz/dart_simple_live](https://github.com/xiaoyaocz/dart_simple_live)
 - 当前公开仓库：`June6699/dart_simple_live`
+- 新增功能或修改 Bug 前，开发者和 AI 助手建议先简单阅读 [AI_CODEBASE_GUIDE.md](/AI_CODEBASE_GUIDE.md)，了解项目结构、关键入口和验证方式。
 
 ## 支持项目
 
@@ -200,3 +201,12 @@ TV 下载建议：
 ## Star History
 
 ![star-history-202676](./images/README/star-history-202676.png)
+<a href="https://www.star-history.com/?repos=June6699%2Fdart_simple_live&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=June6699/dart_simple_live&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=June6699/dart_simple_live&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=June6699/dart_simple_live&type=date&legend=top-left" />
+ </picture>
+</a>
+
+

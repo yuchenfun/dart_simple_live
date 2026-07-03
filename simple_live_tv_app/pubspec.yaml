@@ -46,6 +46,7 @@ dependencies:
   path_provider: ^2.1.5 #常用路径
   window_manager: ^0.5.1 #窗口管理
   screen_retriever: ^0.2.0 #屏幕范围
+  flutter_inappwebview: ^6.1.5 #WebView
   network_info_plus: ^7.0.0
   shelf: ^1.4.2
   shelf_router: ^1.1.4

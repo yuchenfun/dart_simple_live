@@ -1518,6 +1518,21 @@ class LiveRoomController extends PlayerController
       if (_roomDisposed) {
         return;
       }
+      if (site.id == Constant.kXiaohongshu &&
+          player.platform is NativePlayer) {
+        final nativePlayer = player.platform as dynamic;
+        for (final entry in const [
+          MapEntry('cache', 'no'),
+          MapEntry('demuxer-lavf-o', 'fflags=+nobuffer'),
+          MapEntry('demuxer-lavf-analyzeduration', '0'),
+        ]) {
+          try {
+            await nativePlayer.setProperty(entry.key, entry.value);
+          } catch (e) {
+            Log.d("小红书播放器参数设置跳过：${entry.key}=${entry.value} $e");
+          }
+        }
+      }
 
       await _stopDesktopPlayerBeforeOpen();
       if (_roomDisposed) {
@@ -1574,7 +1589,7 @@ class LiveRoomController extends PlayerController
   }
 
   bool get _shouldRefreshUrlsOnPlaybackRetry =>
-      site.id == Constant.kHuya || site.id == Constant.kDouyu;
+      site.id == Constant.kHuya || site.id == Constant.kDouyu || site.id == Constant.kXiaohongshu;
 
   @override
   void mediaEnd() async {
