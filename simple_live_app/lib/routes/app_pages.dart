@@ -40,6 +40,8 @@ import 'package:simple_live_app/modules/mine/account/douyin/web_login_controller
 import 'package:simple_live_app/modules/mine/account/douyin/web_login_page.dart';
 import 'package:simple_live_app/modules/mine/account/kuaishou/web_login_controller.dart';
 import 'package:simple_live_app/modules/mine/account/kuaishou/web_login_page.dart';
+import 'package:simple_live_app/modules/mine/account/xiaohongshu/qr_login_controller.dart';
+import 'package:simple_live_app/modules/mine/account/xiaohongshu/qr_login_page.dart';
 import 'package:simple_live_app/modules/mine/account/xiaohongshu/web_login_controller.dart';
 import 'package:simple_live_app/modules/mine/account/xiaohongshu/web_login_page.dart';
 import 'package:simple_live_app/modules/settings/appstyle_setting_page.dart';
@@ -257,6 +259,14 @@ class AppPages {
       page: () => const XiaohongshuWebLoginPage(),
       bindings: [
         BindingsBuilder.put(() => XiaohongshuWebLoginController()),
+      ],
+    ),
+    //小红书二维码登录
+    GetPage(
+      name: RoutePath.kXiaohongshuQRLogin,
+      page: () => const XiaohongshuQRLoginPage(),
+      bindings: [
+        BindingsBuilder.put(() => XiaohongshuQRLoginController()),
       ],
     ),
     // 数据同步

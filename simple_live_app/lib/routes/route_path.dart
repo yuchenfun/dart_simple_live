@@ -72,6 +72,9 @@ class RoutePath {
   /// 小红书 Web登录
   static const kXiaohongshuWebLogin = "/settings/account/xiaohongshu/web_login";
 
+  /// 小红书二维码登录
+  static const kXiaohongshuQRLogin = "/settings/account/xiaohongshu/qr_login";
+
   /// 数据同步
   static const kLocalSync = "/local_sync";
 

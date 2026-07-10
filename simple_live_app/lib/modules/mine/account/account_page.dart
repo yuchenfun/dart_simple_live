@@ -100,12 +100,17 @@ class AccountPage extends GetView<AccountController> {
               ),
               title: const Text("小红书直播"),
               subtitle: Text(controller.getXiaohongshuCookieSummaryText()),
-              trailing: controller.canUseXiaohongshuWebLogin
+              trailing: controller.canUseXiaohongshuQRLogin
                   ? TextButton(
-                      onPressed: controller.xiaohongshuWebLogin,
-                      child: const Text("网页登录"),
+                      onPressed: controller.xiaohongshuQRLogin,
+                      child: const Text("扫码登录"),
                     )
-                  : const Icon(Icons.chevron_right),
+                  : controller.canUseXiaohongshuWebLogin
+                      ? TextButton(
+                          onPressed: controller.xiaohongshuWebLogin,
+                          child: const Text("网页登录"),
+                        )
+                      : const Icon(Icons.chevron_right),
               onTap: controller.xiaohongshuTap,
             ),
           ),

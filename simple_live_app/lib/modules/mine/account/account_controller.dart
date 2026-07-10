@@ -300,12 +300,18 @@ class AccountController extends GetxController {
 
   bool get canUseXiaohongshuWebLogin => Platform.isAndroid || Platform.isIOS;
 
+  bool get canUseXiaohongshuQRLogin => Platform.isMacOS;
+
   void kuaishouWebLogin() {
     Get.toNamed(RoutePath.kKuaishouWebLogin);
   }
 
   void xiaohongshuWebLogin() {
     Get.toNamed(RoutePath.kXiaohongshuWebLogin);
+  }
+
+  void xiaohongshuQRLogin() {
+    Get.toNamed(RoutePath.kXiaohongshuQRLogin);
   }
 
   void xiaohongshuLogin() {
@@ -315,6 +321,17 @@ class AccountController extends GetxController {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (Platform.isMacOS)
+            ListTile(
+              leading: const Icon(Icons.qr_code),
+              title: const Text("扫码登录"),
+              subtitle: const Text("使用小红书APP扫描二维码登录"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Get.back();
+                xiaohongshuQRLogin();
+              },
+            ),
           if (Platform.isAndroid || Platform.isIOS)
             ListTile(
               leading: const Icon(Icons.account_circle_outlined),
