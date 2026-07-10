@@ -53,9 +53,6 @@ class XiaohongshuQRLoginPage extends GetView<XiaohongshuQRLoginController> {
                     child: Stack(
                       children: [
                         InAppWebView(
-                          initialUrlRequest: URLRequest(
-                            url: WebUri(XiaohongshuQRLoginController.loginUrl),
-                          ),
                           initialSettings: InAppWebViewSettings(
                             userAgent: XiaohongshuSite.userAgent,
                             javaScriptEnabled: true,
