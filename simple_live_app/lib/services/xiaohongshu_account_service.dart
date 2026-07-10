@@ -182,13 +182,18 @@ class XiaohongshuAccountService extends GetxService {
       Platform.isMacOS ||
       Platform.isWindows;
 
-  bool _canProxyApi(Uri uri) => _isRoomInfoApi(uri) || _isSquarefeedApi(uri);
+  bool _canProxyApi(Uri uri) =>
+      _isRoomInfoApi(uri) || _isSquarefeedApi(uri) || _isWorldCupApi(uri);
 
   bool _isRoomInfoApi(Uri uri) =>
       uri.path.endsWith('/api/sns/red/live/web/v1/room/current_room_info');
 
   bool _isSquarefeedApi(Uri uri) =>
       uri.path.endsWith('/api/sns/red/live/web/feed/v1/squarefeed');
+
+  bool _isWorldCupApi(Uri uri) =>
+      uri.path.endsWith('/api/sns/web/worldcup/live_bar') ||
+      uri.path.endsWith('/api/sns/web/worldcup/calendar_info');
 
   bool _matchesPendingApi(String url) {
     if (_pendingApiPath.isEmpty || url.isEmpty) {
@@ -203,6 +208,10 @@ class XiaohongshuAccountService extends GetxService {
     if (_isRoomInfoApi(Uri(path: _pendingApiPath))) {
       return url.contains('/room/current_room_info');
     }
+    if (_isWorldCupApi(Uri(path: _pendingApiPath))) {
+      return url.contains('/api/sns/web/worldcup/live_bar') ||
+          url.contains('/api/sns/web/worldcup/calendar_info');
+    }
     return false;
   }
 
@@ -210,6 +219,10 @@ class XiaohongshuAccountService extends GetxService {
     if (_isSquarefeedApi(uri)) {
       final cacheBuster = DateTime.now().millisecondsSinceEpoch;
       return '${XiaohongshuSite.liveListUrl}&_sl=$cacheBuster';
+    }
+    if (_isWorldCupApi(uri)) {
+      final cacheBuster = DateTime.now().millisecondsSinceEpoch;
+      return '${XiaohongshuSite.webHost}/worldcup26?_sl=$cacheBuster';
     }
     return "https://www.xiaohongshu.com/livestream/$roomId";
   }
@@ -345,7 +358,9 @@ class XiaohongshuAccountService extends GetxService {
 
   bool _isInterestingResponseUrl(String url) =>
       url.contains('/api/sns/red/live/web/feed/') ||
-      url.contains('/api/sns/red/live/web/v1/room/current_room_info');
+      url.contains('/api/sns/red/live/web/v1/room/current_room_info') ||
+      url.contains('/api/sns/web/worldcup/live_bar') ||
+      url.contains('/api/sns/web/worldcup/calendar_info');
 
   String _shortPrefix(String value) {
     final compact = value.replaceAll(RegExp(r'\s+'), ' ').trim();
@@ -365,8 +380,6 @@ class XiaohongshuAccountService extends GetxService {
         ? feeds.first as Map
         : const <String, dynamic>{};
     final live = first['live'] is Map ? first['live'] as Map : first;
-    final recommend =
-        first['recommend'] is Map ? first['recommend'] as Map : const {};
     final roomInfo = _findMapByKey(live, 'tRoomInfo') ??
         _findMapByKey(live, 't_room_info') ??
         _findMapByKey(live, 'room_info') ??
@@ -383,7 +396,7 @@ class XiaohongshuAccountService extends GetxService {
       "[XiaohongshuWebView] $source decoded summary: feeds=${feeds.length}, "
       "parsed=${parsed.items.length}, "
       "firstKeys=${first.keys.take(12).join(',')}, "
-      "liveKeys=${live is Map ? live.keys.take(16).join(',') : live.runtimeType}, "
+      "liveKeys=${live.keys.take(16).join(',')}, "
       "roomInfoKeys=${roomInfo.keys.take(16).join(',')}, "
       "hostInfoKeys=${hostInfo.keys.take(12).join(',')}, "
       "sampleTitle=${firstItem?.title ?? ''}, "
@@ -404,7 +417,8 @@ class XiaohongshuAccountService extends GetxService {
     if (value is Map) {
       final parts = <String>[];
       for (final entry in value.entries.take(16)) {
-        parts.add('${entry.key}:${_describeMapShape(entry.value, depth: depth + 1)}');
+        parts.add(
+            '${entry.key}:${_describeMapShape(entry.value, depth: depth + 1)}');
       }
       return '{${parts.join(',')}}';
     }
@@ -473,7 +487,9 @@ class XiaohongshuAccountService extends GetxService {
 (function() {
   function shouldReport(url) {
     return url.indexOf('/api/sns/red/live/web/feed/v1/squarefeed') >= 0 ||
-      url.indexOf('/api/sns/red/live/web/v1/room/current_room_info') >= 0;
+      url.indexOf('/api/sns/red/live/web/v1/room/current_room_info') >= 0 ||
+      url.indexOf('/api/sns/web/worldcup/live_bar') >= 0 ||
+      url.indexOf('/api/sns/web/worldcup/calendar_info') >= 0;
   }
   function report(url, text) {
     try {

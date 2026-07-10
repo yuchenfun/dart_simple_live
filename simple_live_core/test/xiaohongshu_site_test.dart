@@ -189,19 +189,13 @@ void main() {
         'data': {
           'feeds': [
             {
-              'recommend': {
-                'live_rec_content_text': '推荐直播标题',
-              },
+              'recommend': {'live_rec_content_text': '推荐直播标题'},
               'live': {
                 't_room_info': {
                   'room_id_str': '570339312483994664',
-                  'cover_info': {
-                    'url': 'https://example.com/nested-cover.jpg',
-                  },
+                  'cover_info': {'url': 'https://example.com/nested-cover.jpg'},
                 },
-                't_live_host_info': {
-                  'nick_name': '推荐主播',
-                },
+                't_live_host_info': {'nick_name': '推荐主播'},
               },
             },
           ],
@@ -227,9 +221,7 @@ void main() {
                   'link':
                       'https://www.xiaohongshu.com/livestream/570345118965921935',
                 },
-                'host_info': {
-                  'nick_name': '链接主播',
-                },
+                'host_info': {'nick_name': '链接主播'},
               },
             },
           ],
@@ -241,6 +233,118 @@ void main() {
       expect(result.items.single.title, '链接型直播间');
       expect(result.items.single.userName, '链接主播');
       expect(result.items.single.cover, 'https://example.com/cover-link.jpg');
+    });
+
+    test('adds a fixed World Cup topic to categories', () async {
+      final categories = await XiaohongshuSite().getCategores();
+
+      expect(categories.map((item) => item.name), contains('世界杯专题'));
+      final worldCup = categories.singleWhere(
+        (item) => item.id == 'worldcup26',
+      );
+      expect(worldCup.children.single.id, 'worldcup26');
+      expect(worldCup.children.single.name, '世界杯专题');
+    });
+
+    test('loads World Cup rooms from official topic APIs', () async {
+      final requestedPaths = <String>[];
+      final site = XiaohongshuSite(
+        jsonFetcher: (uri, body) async {
+          requestedPaths.add(uri.path);
+          return {
+            'success': true,
+            'data': {
+              'match': {
+                'title': '世界杯直播',
+                'cover': 'https://example.com/worldcup.jpg',
+                'live_url':
+                    'https://www.xiaohongshu.com/livestream/570345118965921935',
+                'anchor': {'nickname': '小红书体育'},
+              },
+            },
+          };
+        },
+      );
+      final category = LiveSubCategory(
+        id: 'worldcup26',
+        name: '世界杯专题',
+        parentId: 'worldcup26',
+      );
+
+      final result = await site.getCategoryRooms(category);
+
+      expect(requestedPaths, contains('/api/sns/web/worldcup/live_bar'));
+      expect(result.hasMore, isFalse);
+      expect(result.items, hasLength(1));
+      expect(result.items.single.roomId, '570345118965921935');
+      expect(result.items.single.title, '世界杯直播');
+      expect(result.items.single.userName, '小红书体育');
+      expect(result.items.single.cover, 'https://example.com/worldcup.jpg');
+    });
+
+    test('falls back to the official World Cup calendar request', () async {
+      final requestedUris = <Uri>[];
+      final site = XiaohongshuSite(
+        jsonFetcher: (uri, body) async {
+          requestedUris.add(uri);
+          if (uri.path.endsWith('/live_bar')) {
+            return {'success': true, 'data': const {}};
+          }
+          return {
+            'success': true,
+            'data': {
+              'calendar_list': [
+                {
+                  'matches': [
+                    {
+                      'title': '哥伦比亚 vs 加纳',
+                      'live_info': {
+                        'room_id': '570347737968922116',
+                        'preview_title': '小红书直播',
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          };
+        },
+      );
+      final category = LiveSubCategory(
+        id: 'worldcup26',
+        name: '世界杯专题',
+        parentId: 'worldcup26',
+      );
+
+      final result = await site.getCategoryRooms(category);
+      final calendarUri = requestedUris.singleWhere(
+        (uri) => uri.path.endsWith('/calendar_info'),
+      );
+
+      expect(calendarUri.queryParameters['competition_id'], '1');
+      expect(calendarUri.queryParameters['season_id'], '13776');
+      expect(calendarUri.queryParameters['need_live'], 'true');
+      expect(result.items.single.roomId, '570347737968922116');
+    });
+
+    test('ignores World Cup match ids that are not live room links', () {
+      final rooms = XiaohongshuSite.parseWorldCupRoomsForTest({
+        'data': {
+          'match': {
+            'roomId': '123456789012',
+            'title': '比赛卡片',
+            'liveInfo': {
+              'deeplink': 'xhsdiscover://live/room?room_id=570345118965921935',
+              'anchor': {'nickname': '世界杯直播间'},
+            },
+          },
+        },
+      });
+
+      expect(rooms, hasLength(1));
+      expect(rooms.single.roomId, '570345118965921935');
+      expect(rooms.single.title, '比赛卡片');
+      expect(rooms.single.userName, '世界杯直播间');
     });
     test('prefers h264 stream urls over orig for playback', () {
       final detail = XiaohongshuSite.parseCurrentRoomInfo({
@@ -266,13 +370,53 @@ void main() {
         },
       }, fallbackRoomId: '570346714529460690');
       final qualities = XiaohongshuSite.parsePlayQualitiesForTest(detail);
-      final firstUrl = XiaohongshuSite()
-          .getPlayUrls(detail: detail, quality: qualities.first);
+      final firstUrl = XiaohongshuSite().getPlayUrls(
+        detail: detail,
+        quality: qualities.first,
+      );
 
       expect(qualities.first.quality, '超清');
       expect(
         firstUrl.then((value) => value.urls.first),
         completion(contains('hcv520e')),
+      );
+    });
+
+    test('prefers h264_streams over timeshift h265 urls', () {
+      final detail = XiaohongshuSite.parseCurrentRoomInfo({
+        'data': {
+          'room_info': {
+            'room_id': '570347737968922116',
+            'status': 1,
+            'pull_config': json.encode({
+              'streams': [
+                {
+                  'quality_type_name': '超清',
+                  'master_url':
+                      'https://live-fwc-play-hw-timeshift.xhscdn.com/live/570347737968922116_hcc535.m3u8',
+                },
+              ],
+              'h264_streams': [
+                {
+                  'quality_type_name': '超清',
+                  'master_url':
+                      'https://live-source-play.xhscdn.com/live/570347737968922116_hcv520e.flv',
+                },
+              ],
+            }),
+          },
+        },
+      }, fallbackRoomId: '570347737968922116');
+      final qualities = XiaohongshuSite.parsePlayQualitiesForTest(detail);
+      final firstUrl = XiaohongshuSite().getPlayUrls(
+        detail: detail,
+        quality: qualities.first,
+      );
+
+      expect(qualities, hasLength(2));
+      expect(
+        firstUrl.then((value) => value.urls.first),
+        completion(contains('hcv520e.flv')),
       );
     });
   });

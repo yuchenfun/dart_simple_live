@@ -30,6 +30,7 @@ class XiaohongshuSite extends LiveSite {
   static const String liveApiHost = 'https://live-room.xiaohongshu.com';
   static const String liveListUrl =
       '$webHost/livelist?channel_id=&channel_type=web_live_tab';
+  static const String worldCupCategoryId = 'worldcup26';
 
   XiaohongshuSignedHeadersProvider? signedHeadersProvider;
   XiaohongshuJsonFetcher? jsonFetcher;
@@ -47,10 +48,17 @@ class XiaohongshuSite extends LiveSite {
         id: 'recommend',
         name: '推荐',
         children: [
+          LiveSubCategory(id: 'recommend', name: '推荐', parentId: 'recommend'),
+        ],
+      ),
+      LiveCategory(
+        id: worldCupCategoryId,
+        name: '世界杯专题',
+        children: [
           LiveSubCategory(
-            id: 'recommend',
-            name: '推荐',
-            parentId: 'recommend',
+            id: worldCupCategoryId,
+            name: '世界杯专题',
+            parentId: worldCupCategoryId,
           ),
         ],
       ),
@@ -62,7 +70,47 @@ class XiaohongshuSite extends LiveSite {
     LiveSubCategory category, {
     int page = 1,
   }) async {
+    if (category.id == worldCupCategoryId ||
+        category.parentId == worldCupCategoryId) {
+      return _getWorldCupRooms(page: page);
+    }
     return getRecommendRooms(page: page);
+  }
+
+  Future<LiveCategoryResult> _getWorldCupRooms({int page = 1}) async {
+    if (page > 1) {
+      return LiveCategoryResult(hasMore: false, items: const []);
+    }
+
+    final liveBarUri = Uri.parse('$webHost/api/sns/web/worldcup/live_bar');
+    final liveBarRooms = await _tryGetWorldCupRooms(liveBarUri);
+    if (liveBarRooms.isNotEmpty) {
+      return LiveCategoryResult(hasMore: false, items: liveBarRooms);
+    }
+
+    final calendarUri = Uri.parse('$webHost/api/sns/web/worldcup/calendar_info')
+        .replace(
+          queryParameters: const <String, String>{
+            'competition_id': '1',
+            'season_id': '13776',
+            'team_id1': '0',
+            'team_id2': '0',
+            'need_start_time_minute': 'false',
+            'player_id': '',
+            'need_live': 'true',
+          },
+        );
+    final calendarRooms = await _tryGetWorldCupRooms(calendarUri);
+    return LiveCategoryResult(hasMore: false, items: calendarRooms);
+  }
+
+  Future<List<LiveRoomItem>> _tryGetWorldCupRooms(Uri uri) async {
+    try {
+      final result = await _getJson(uri);
+      return _parseWorldCupRooms(result);
+    } catch (_) {
+      return const [];
+    }
   }
 
   @override
@@ -77,7 +125,7 @@ class XiaohongshuSite extends LiveSite {
           queryParameters: <String, String>{
             'cursorScore': _recommendCursorScore,
             'source': '13',
-            'category': '0',
+            'category': '',
             'preSource': '',
             'size': '27',
             'extra_info': json.encode({
@@ -99,6 +147,189 @@ class XiaohongshuSite extends LiveSite {
     return _parseSquarefeed(data);
   }
 
+  static List<LiveRoomItem> parseWorldCupRoomsForTest(
+    Map<String, dynamic> data,
+  ) {
+    return _parseWorldCupRooms(data);
+  }
+
+  static List<LiveRoomItem> _parseWorldCupRooms(Map data) {
+    final items = <LiveRoomItem>[];
+    final seenRoomIds = <String>{};
+    _collectWorldCupRooms(data, items, seenRoomIds);
+    return items;
+  }
+
+  static void _collectWorldCupRooms(
+    dynamic source,
+    List<LiveRoomItem> items,
+    Set<String> seenRoomIds, {
+    String inheritedTitle = '',
+    String inheritedCover = '',
+    String inheritedUserName = '',
+    int depth = 0,
+  }) {
+    if (depth > 12) {
+      return;
+    }
+    if (source is Map) {
+      final map = Map<String, dynamic>.from(source);
+      final title = _firstNonEmpty([
+        _firstString(map, const [
+          'title',
+          'match_title',
+          'matchTitle',
+          'room_title',
+          'roomTitle',
+          'name',
+          'desc',
+          'subtitle',
+        ]),
+        inheritedTitle,
+        '世界杯直播',
+      ]);
+      final cover = _firstNonEmpty([_firstMediaUrl(map), inheritedCover]);
+      final userName = _firstNonEmpty([
+        _firstString(map, const [
+          'nickname',
+          'nick_name',
+          'user_name',
+          'userName',
+          'anchor_name',
+          'anchorName',
+          'host_name',
+          'hostName',
+        ]),
+        _firstWorldCupNestedUserName(map),
+        inheritedUserName,
+      ]);
+
+      final roomId = _resolveWorldCupRoomId(map);
+      if (roomId.isNotEmpty && seenRoomIds.add(roomId)) {
+        items.add(
+          LiveRoomItem(
+            roomId: roomId,
+            title: title,
+            cover: cover,
+            userName: userName,
+            online: _firstInt(map, const [
+              'online',
+              'online_count',
+              'display_count',
+              'view_num',
+              'viewer_count',
+            ]),
+          ),
+        );
+      }
+
+      for (final value in map.values) {
+        _collectWorldCupRooms(
+          value,
+          items,
+          seenRoomIds,
+          inheritedTitle: title,
+          inheritedCover: cover,
+          inheritedUserName: userName,
+          depth: depth + 1,
+        );
+      }
+    } else if (source is Iterable) {
+      for (final item in source) {
+        _collectWorldCupRooms(
+          item,
+          items,
+          seenRoomIds,
+          inheritedTitle: inheritedTitle,
+          inheritedCover: inheritedCover,
+          inheritedUserName: inheritedUserName,
+          depth: depth + 1,
+        );
+      }
+    }
+  }
+
+  static String _resolveWorldCupRoomId(Map source) {
+    final direct = _firstString(source, const [
+      'room_id_str',
+      'room_id',
+      'live_room_id',
+      'web_room_id',
+    ]);
+    if (_looksLikeRoomId(direct)) {
+      return direct;
+    }
+    return _extractRoomIdFromDirectLinks(source);
+  }
+
+  static String _extractRoomIdFromDirectLinks(Map source) {
+    for (final key in const [
+      'link',
+      'url',
+      'deeplink',
+      'deep_link',
+      'jump_url',
+      'live_url',
+      'liveUrl',
+      'room_link',
+      'room_url',
+      'web_url',
+    ]) {
+      final value = _firstString(source, [key]);
+      final resolved = _extractRoomIdFromText(value);
+      if (resolved.isNotEmpty) {
+        return resolved;
+      }
+    }
+    return '';
+  }
+
+  static String _extractRoomIdFromText(String value) {
+    final text = value.trim();
+    if (text.isEmpty) {
+      return '';
+    }
+    final fromLivestream = resolveRoomId(text);
+    if (fromLivestream.isNotEmpty && fromLivestream != text) {
+      return fromLivestream;
+    }
+    final roomIdMatch = RegExp(
+      r'''["']?room_id["']?\s*[:=]\s*["']?(\d{10,})''',
+    ).firstMatch(text);
+    if (roomIdMatch != null) {
+      return roomIdMatch.group(1) ?? '';
+    }
+    return '';
+  }
+
+  static String _firstWorldCupNestedUserName(Map source) {
+    for (final key in const [
+      'anchor',
+      'host',
+      'host_info',
+      'hostInfo',
+      'user',
+      'user_info',
+      'userInfo',
+      'author',
+    ]) {
+      final value = source[key];
+      if (value is Map) {
+        final name = _firstString(value, const [
+          'nickname',
+          'nick_name',
+          'name',
+          'user_name',
+          'userName',
+        ]);
+        if (name.isNotEmpty) {
+          return name;
+        }
+      }
+    }
+    return '';
+  }
+
   static LiveCategoryResult _parseSquarefeed(Map data) {
     final feeds = _findFeedList(data);
     final items = <LiveRoomItem>[];
@@ -108,7 +339,8 @@ class XiaohongshuSite extends LiveSite {
         items.add(item);
       }
     }
-    final hasMore = _asApiBool(data['hasMore']) ||
+    final hasMore =
+        _asApiBool(data['hasMore']) ||
         _asApiBool(data['has_more']) ||
         _asApiBool(_findMapByKey(data, 'page_info')?['has_more']) ||
         items.isNotEmpty;
@@ -244,10 +476,7 @@ class XiaohongshuSite extends LiveSite {
     return null;
   }
 
-  static String _firstNonEmpty(
-    List<String> values, {
-    String fallback = '',
-  }) {
+  static String _firstNonEmpty(List<String> values, {String fallback = ''}) {
     for (final value in values) {
       if (value.trim().isNotEmpty) {
         return value.trim();
@@ -401,6 +630,8 @@ class XiaohongshuSite extends LiveSite {
       'deeplink',
       'deep_link',
       'jump_url',
+      'live_url',
+      'liveUrl',
       'room_link',
       'room_url',
       'web_url',
@@ -553,11 +784,13 @@ class XiaohongshuSite extends LiveSite {
   }
 
   Future<Map<String, String>> _headersFor(Uri uri) async {
+    final isWorldCupApi = uri.path.contains('/api/sns/web/worldcup/');
     final headers = <String, String>{
       'accept': 'application/json, text/plain, */*',
       'origin': webHost,
-      'referer':
-          '$webHost/livestream/${resolveRoomId(uri.queryParameters['room_id'] ?? '')}',
+      'referer': isWorldCupApi
+          ? '$webHost/worldcup26'
+          : '$webHost/livestream/${resolveRoomId(uri.queryParameters['room_id'] ?? '')}',
       'user-agent': userAgent,
     };
     if (cookie.trim().isNotEmpty) {
@@ -687,9 +920,7 @@ class XiaohongshuSite extends LiveSite {
       }
       playable.add(map);
     }
-    playable.sort(
-      (a, b) => _streamPlayScore(b).compareTo(_streamPlayScore(a)),
-    );
+    playable.sort((a, b) => _streamPlayScore(b).compareTo(_streamPlayScore(a)));
 
     final qualities = <LivePlayQuality>[];
     for (var i = 0; i < playable.length; i++) {
@@ -759,17 +990,20 @@ class XiaohongshuSite extends LiveSite {
 
   static int _urlPlayScore(String url) {
     final value = url.toLowerCase();
-    if (value.contains('.m3u8')) {
-      return 120;
-    }
     if (value.contains('hcv540')) {
-      return 110;
+      return 150;
     }
     if (value.contains('hcv520')) {
-      return 105;
+      return 145;
     }
     if (value.contains('hcv')) {
-      return 100;
+      return 140;
+    }
+    if (value.contains('timeshift') || value.contains('hcc')) {
+      return 30;
+    }
+    if (value.contains('.m3u8')) {
+      return 120;
     }
     if (value.contains('_orig')) {
       return 20;
@@ -792,10 +1026,17 @@ class XiaohongshuSite extends LiveSite {
         return const [];
       }
     }
-    if (decoded is! Map || decoded['streams'] is! List) {
+    if (decoded is! Map) {
       return const [];
     }
-    return (decoded['streams'] as List)
+    final streams = <dynamic>[
+      if (decoded['h264_streams'] is List) ...(decoded['h264_streams'] as List),
+      if (decoded['streams'] is List) ...(decoded['streams'] as List),
+    ];
+    if (streams.isEmpty) {
+      return const [];
+    }
+    return streams
         .whereType<Map>()
         .map((item) => Map<String, dynamic>.from(item))
         .toList();
