@@ -15,6 +15,7 @@ import 'package:simple_live_tv_app/services/douyin_account_service.dart';
 import 'package:simple_live_tv_app/services/follow_user_service.dart';
 import 'package:simple_live_tv_app/services/mpv_options_service.dart';
 import 'package:simple_live_tv_app/services/signalr_service.dart';
+import 'package:simple_live_tv_app/services/xiaohongshu_account_service.dart';
 import 'package:simple_live_tv_app/widgets/app_scaffold.dart';
 import 'package:simple_live_tv_app/widgets/button/highlight_button.dart';
 import 'package:simple_live_tv_app/widgets/button/highlight_list_tile.dart';
@@ -880,7 +881,23 @@ class SettingsPage extends GetView<SettingsController> {
             ),
             onTap: controller.douyinTap,
           ),
-        )
+        ),
+        AppStyle.vGap24,
+        Obx(
+          () => HighlightListTile(
+            focusNode: AppFocusNode(),
+            title: "小红书账号",
+            subtitle: XiaohongshuAccountService.instance.hasCookie.value
+                ? "已登录，点击可重新登录或清除 Cookie"
+                : "未登录，点击扫码登录",
+            leading: Image.asset(
+              "assets/images/logo.png",
+              width: 64.w,
+              height: 64.w,
+            ),
+            onTap: controller.xiaohongshuTap,
+          ),
+        ),
       ],
     );
   }

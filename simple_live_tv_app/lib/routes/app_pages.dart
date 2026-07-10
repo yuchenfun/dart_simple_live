@@ -3,6 +3,8 @@
 import 'package:get/get.dart';
 import 'package:simple_live_tv_app/modules/account/bilibili/qr_login_controller.dart';
 import 'package:simple_live_tv_app/modules/account/bilibili/qr_login_page.dart';
+import 'package:simple_live_tv_app/modules/account/xiaohongshu/qr_login_controller.dart';
+import 'package:simple_live_tv_app/modules/account/xiaohongshu/qr_login_page.dart';
 import 'package:simple_live_tv_app/modules/agreement/agreement_page.dart';
 import 'package:simple_live_tv_app/modules/category/category_controller.dart';
 import 'package:simple_live_tv_app/modules/category/category_page.dart';
@@ -89,6 +91,14 @@ class AppPages {
       page: () => const BiliBiliQRLoginPage(),
       bindings: [
         BindingsBuilder.put(() => BiliBiliQRLoginController()),
+      ],
+    ),
+    // 小红书二维码登录
+    GetPage(
+      name: RoutePath.kXiaohongshuQRLogin,
+      page: () => const XiaohongshuQRLoginPage(),
+      bindings: [
+        BindingsBuilder.put(() => XiaohongshuQRLoginController()),
       ],
     ),
     // 设置

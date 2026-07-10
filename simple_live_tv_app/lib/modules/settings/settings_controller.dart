@@ -7,9 +7,11 @@ import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:simple_live_tv_app/app/controller/base_controller.dart';
 import 'package:simple_live_tv_app/app/utils.dart';
 import 'package:simple_live_tv_app/routes/app_navigation.dart';
+import 'package:simple_live_tv_app/routes/route_path.dart';
 import 'package:simple_live_tv_app/services/bilibili_account_service.dart';
 import 'package:simple_live_tv_app/services/douyin_account_service.dart';
 import 'package:simple_live_tv_app/services/signalr_service.dart';
+import 'package:simple_live_tv_app/services/xiaohongshu_account_service.dart';
 
 class SettingsController extends BaseController
     with GetTickerProviderStateMixin {
@@ -165,6 +167,24 @@ class SettingsController extends BaseController
         break;
       default:
         break;
+    }
+  }
+
+  void xiaohongshuTap() async {
+    if (!XiaohongshuAccountService.instance.hasCookie.value) {
+      Get.toNamed(RoutePath.kXiaohongshuQRLogin);
+      return;
+    }
+    final action = await Utils.showOptionDialog<String>(
+      ["扫码重新登录", "清除 Cookie"],
+      "扫码重新登录",
+      title: "小红书账号",
+    );
+    if (action == "扫码重新登录") {
+      Get.toNamed(RoutePath.kXiaohongshuQRLogin);
+    } else if (action == "清除 Cookie") {
+      XiaohongshuAccountService.instance.clearCookie();
+      SmartDialog.showToast("已清除小红书 Cookie");
     }
   }
 
